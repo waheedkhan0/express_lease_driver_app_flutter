@@ -1,0 +1,177 @@
+# ====================================
+# OS GENERATED FILES
+# ====================================
+*.class
+*.log
+*.pyc
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.tmp
+*.temp
+*.hprof
+
+# ====================================
+# DIRECTORY ARTIFACTS (General)
+# ====================================
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+packages/
+node_modules/
+
+# ====================================
+# ENVIRONMENT & SECRETS (CRITICAL)
+# ====================================
+.env
+*.env.local
+*.env.*.local
+!*.env.example
+google-services.json
+GoogleService-Info.plist
+firebase_app_id_file.json
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+*.snk
+*.pfx
+
+# ====================================
+# IDE / EDITOR CONFIGURATIONS
+# ====================================
+
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+*.idea
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+
+# VS Code (Uncommented because workspace/recommendations are usually user-specific)
+.vscode/
+*.code-workspace
+
+# ====================================
+# FLUTTER / DART / PUB
+# ====================================
+.dart_tool/
+.pub/
+.pub-cache/
+.pub-cache/
+.flutter-plugins-dependencies
+.flutter-plugins
+*.packages
+.packages
+
+# Generated documentation
+**/doc/api/
+
+# Flutter iOS build metadata
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+
+# Flutter macOS specific
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/Flutter-Debug.xcconfig
+**/macos/Flutter/Flutter-Release.xcconfig
+**/macos/Flutter/Flutter-Profile.xcconfig
+
+# Build output
+/build/
+/app/build/
+/coverage/
+*.lcov
+
+# Symbolication & obfuscation
+app.*.symbols
+app.*.map.json
+
+# Lock files (COMMENT OUT for applications, UNCOMMENT for pure Dart packages)
+# pubspec.lock
+
+# FVM (Flutter Version Management) – cache is ignored, config is often committed
+.fvm/
+.fvm/flutter_sdk
+
+# ====================================
+# ANDROID (Gradle / Native)
+# ====================================
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/.gradle/
+/android/local.properties
+/android/*.iml
+/android/.project
+/android/.settings/
+/android/app/google-services.json
+/android/captures/
+/android/build/
+/android/app/build/
+
+# ====================================
+# iOS / macOS (CocoaPods & Xcode)
+# ====================================
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/App.framework
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Runner/GeneratedPluginRegistrant.*
+/ios/Podfile.lock
+/ios/*.xcworkspace/xcuserdata/
+/ios/*.xcodeproj/xcuserdata/
+/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+/ios/ServiceDefinitions.json
+/macos/Pods/
+/macos/Podfile.lock
+/macos/.symlinks/
+
+# ====================================
+# WEB (if using Flutter Web)
+# ====================================
+/build/web/
+/.dart_tool/web/
+
+# ====================================
+# TESTING & COVERAGE
+# ====================================
+/coverage/
+*.lcov
+/test/.test_coverage.dart
+/test/**/coverage/
+
+# ====================================
+# MISC / TEMPORARY FILES
+# ====================================
+*.pid
+*.seed
+*.lock
+*.tar.gz
+*.tgz
+*.zip
+*.rar
+*.7z
