@@ -400,9 +400,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       ),
                                       isExpanded: true,
                                       items: _myBikes.map<DropdownMenuItem<String>>((dynamic bike) {
-                                        final disp = "${bike['brand']} ${bike['model_name']} (${bike['registration_number'] ?? 'No Plate'})";
+                                        final brand = _safeOdooString(bike['brand']);
+                                        final model = _safeOdooString(bike['model_name']);
+                                        final reg = _safeOdooString(bike['registration_number'], fallback: 'No Plate');
+                                        final disp = "$brand $model ($reg)";
                                         return DropdownMenuItem<String>(
-                                          value: bike['chassis_number'],
+                                          value: _safeOdooString(bike['chassis_number']),
                                           child: Text(
                                             disp,
                                             overflow: TextOverflow.ellipsis,
@@ -450,7 +453,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 letterSpacing: 1.5,
                               ),
                             ),
-                            if (_selectedBike!['state'] != null)
+                            if (_selectedBike!['state'] != null && _selectedBike!['state'] != false)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
@@ -490,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             Expanded(
                               child: _buildDetailRow(
                                 label: 'BRAND / MODEL',
-                                value: "${_selectedBike!['brand'] ?? ''} ${_selectedBike!['model_name'] ?? ''}".trim().toUpperCase(),
+                                value: "${_safeOdooString(_selectedBike!['brand'])} ${_safeOdooString(_selectedBike!['model_name'])}".trim().toUpperCase(),
                                 icon: Icons.motorcycle,
                               ),
                             ),
@@ -502,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             Expanded(
                               child: _buildDetailRow(
                                 label: 'REGISTRATION NO',
-                                value: _selectedBike!['registration_number'] ?? 'N/A',
+                                value: _safeOdooString(_selectedBike!['registration_number'], fallback: 'N/A'),
                                 icon: Icons.badge,
                               ),
                             ),
@@ -510,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             Expanded(
                               child: _buildDetailRow(
                                 label: 'CHASSIS NUMBER',
-                                value: _selectedBike!['chassis_number'] ?? 'N/A',
+                                value: _safeOdooString(_selectedBike!['chassis_number'], fallback: 'N/A'),
                                 icon: Icons.fingerprint,
                               ),
                             ),
@@ -736,6 +739,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
       ],
     );
+  }
+
+  String _safeOdooString(dynamic value, {String fallback = ''}) {
+    if (value == null || value == false) return fallback;
+    return value.toString();
   }
 
   Widget _buildDashboardMetric({

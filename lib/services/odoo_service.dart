@@ -103,11 +103,14 @@ class OdooService {
       await prefs.setString(keyUsername, username);
       await prefs.setString(keyPassword, password);
       await prefs.setString(keySessionCookie, sessionCookie);
-      await prefs.setString(keyDriverName, result['name'] ?? username);
+      final driverNameStr = (result['name'] is String && (result['name'] as String).isNotEmpty) 
+          ? result['name'] as String 
+          : username;
+      await prefs.setString(keyDriverName, driverNameStr);
 
       return {
         'success': true,
-        'driverName': result['name'] ?? username,
+        'driverName': driverNameStr,
         'sessionCookie': sessionCookie,
       };
     } catch (e) {
@@ -174,7 +177,7 @@ class OdooService {
       }
 
       final bikes = result['bikes'] as List<dynamic>? ?? [];
-      final driverName = result['driver_name'] ?? '';
+      final driverName = (result['driver_name'] is String) ? result['driver_name'] as String : '';
 
       if (driverName.isNotEmpty) {
         await prefs.setString(keyDriverName, driverName);
