@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,17 +60,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _driverName = prefs.getString(OdooService.keyDriverName) ?? 'Driver';
-      final activeChassis = prefs.getString(OdooService.keyActiveBikeChassis);
-      final activeName = prefs.getString(OdooService.keyActiveBikeName);
-      
-      if (activeChassis != null && activeName != null) {
-        _selectedBike = {
-          'chassis_number': activeChassis,
-          'registration_number': activeName.split(' - ').last,
-          'name': activeName.split(' - ').first,
-        };
+      final bikeJson = prefs.getString('active_bike_json');
+      if (bikeJson != null) {
+        try {
+          _selectedBike = Map<String, dynamic>.from(jsonDecode(bikeJson));
+        } catch (_) {
+          _loadSelectedBikeFallback(prefs);
+        }
+      } else {
+        _loadSelectedBikeFallback(prefs);
       }
     });
+  }
+
+  void _loadSelectedBikeFallback(SharedPreferences prefs) {
+    final activeChassis = prefs.getString(OdooService.keyActiveBikeChassis);
+    final activeName = prefs.getString(OdooService.keyActiveBikeName);
+    if (activeChassis != null && activeName != null) {
+      _selectedBike = {
+        'chassis_number': activeChassis,
+        'registration_number': activeName.split(' - ').last,
+        'name': activeName.split(' - ').first,
+        'brand': activeName.split(' - ').first.split(' ').first,
+        'model_name': activeName.split(' - ').first.split(' ').skip(1).join(' '),
+      };
+    }
   }
 
   Future<void> _checkServiceStatus() async {
@@ -139,10 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
     
     final bikeDisplayName = "${bike['brand']} ${bike['model_name']} - ${bike['registration_number'] ?? bike['chassis_number']}";
-    await _odoo.setActiveBike(
-      chassis: bike['chassis_number'],
-      name: bikeDisplayName,
-    );
+    await _odoo.setActiveBike(bike);
 
     // If tracking is active, restart service to pick up the new bike chassis
     if (_isTrackingActive) {
@@ -416,6 +428,101 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 24),
 
+              // Vehicle Details Card if a bike is selected
+              if (_selectedBike != null) ...[
+                Card(
+                  color: const Color(0xFF1E293B),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.between,
+                          children: [
+                            const Text(
+                              'VEHICLE DETAILS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF94A3B8),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            if (_selectedBike!['state'] != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _selectedBike!['state'] == 'available'
+                                      ? const Color(0x2610B981)
+                                      : _selectedBike!['state'] == 'leased'
+                                          ? const Color(0x260EA5E9)
+                                          : const Color(0x26F59E0B),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _selectedBike!['state'] == 'available'
+                                        ? const Color(0xFF10B981)
+                                        : _selectedBike!['state'] == 'leased'
+                                            ? const Color(0xFF0EA5E9)
+                                            : const Color(0xFFF59E0B),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  _selectedBike!['state'].toString().toUpperCase(),
+                                  style: TextStyle(
+                                    color: _selectedBike!['state'] == 'available'
+                                        ? const Color(0xFF34D399)
+                                        : _selectedBike!['state'] == 'leased'
+                                            ? const Color(0xFF38BDF8)
+                                            : const Color(0xFFFBBF24),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const Divider(color: Color(0x1FFFFFFF), height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDetailRow(
+                                label: 'BRAND / MODEL',
+                                value: "${_selectedBike!['brand'] ?? ''} ${_selectedBike!['model_name'] ?? ''}".trim().toUpperCase(),
+                                icon: Icons.motorcycle,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDetailRow(
+                                label: 'REGISTRATION NO',
+                                value: _selectedBike!['registration_number'] ?? 'N/A',
+                                icon: Icons.badge,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildDetailRow(
+                                label: 'CHASSIS NUMBER',
+                                value: _selectedBike!['chassis_number'] ?? 'N/A',
+                                icon: Icons.fingerprint,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
               // Visual pulsing radar & Live Tracker Panel
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
@@ -592,6 +699,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF64748B)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 9,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 

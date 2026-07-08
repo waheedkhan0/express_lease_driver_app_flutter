@@ -82,7 +82,9 @@ class LocationService {
       'express_lease_tracking_channel', // id
       'Express Lease Location Tracking', // title
       description: 'Used for persistent foreground tracking service of vehicles.', // description
-      importance: Importance.high,
+      importance: Importance.low,
+      playSound: false,
+      enableVibration: false,
     );
 
     final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -96,7 +98,7 @@ class LocationService {
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
-        autoStart: false, // Don't start automatically on boot unless tracking was active
+        autoStart: true, // Auto-start service on boot/app launch
         isForegroundMode: true,
         notificationChannelId: 'express_lease_tracking_channel',
         initialNotificationTitle: 'EXPRESS LEASE MOTORCYCLES RENTAL',
@@ -104,7 +106,7 @@ class LocationService {
         foregroundServiceNotificationId: 888,
       ),
       iosConfiguration: IosConfiguration(
-        autoStart: false,
+        autoStart: true, // Auto-start service on iOS
         onForeground: onStart,
         onBackground: onStart,
       ),

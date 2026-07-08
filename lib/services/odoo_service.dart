@@ -249,10 +249,13 @@ class OdooService {
   }
 
   /// Selects the active bike for tracking.
-  Future<void> setActiveBike({required String chassis, required String name}) async {
+  Future<void> setActiveBike(Map<String, dynamic> bike) async {
     final prefs = await SharedPreferences.getInstance();
+    final chassis = bike['chassis_number'] ?? '';
+    final name = "${bike['brand']} ${bike['model_name']} - ${bike['registration_number'] ?? chassis}";
     await prefs.setString(keyActiveBikeChassis, chassis);
     await prefs.setString(keyActiveBikeName, name);
+    await prefs.setString('active_bike_json', jsonEncode(bike));
   }
 
   /// Log out and clear saved session.
@@ -285,6 +288,7 @@ class OdooService {
     await prefs.remove(keyDriverName);
     await prefs.remove(keyActiveBikeChassis);
     await prefs.remove(keyActiveBikeName);
+    await prefs.remove('active_bike_json');
     await prefs.remove(keyLastSyncTime);
   }
 }
