@@ -35,6 +35,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   StreamSubscription? _backgroundSubscription;
   late AnimationController _pulseController;
 
+  bool get _hasLocationError =>
+      !_lastSyncSuccess &&
+      (_statusMessage.toLowerCase().contains('gps') ||
+       _statusMessage.toLowerCase().contains('location') ||
+       _statusMessage.toLowerCase().contains('permission') ||
+       _statusMessage.toLowerCase().contains('denied') ||
+       _statusMessage.toLowerCase().contains('error'));
+
   @override
   void initState() {
     super.initState();
@@ -526,6 +534,35 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 24),
               ],
 
+              // Warning banner if location tracking fails or GPS is disabled
+              if (_isTrackingActive && _hasLocationError) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0x26EF4444), // 15% opacity Red 500
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0x66EF4444)), // 40% opacity Red 500
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFF87171)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _statusMessage,
+                          style: const TextStyle(
+                            color: Color(0xFFFCA5A5), // Red 300
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Visual pulsing radar & Live Tracker Panel
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
@@ -766,13 +803,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               Icon(icon, size: 14, color: const Color(0xFF64748B)),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
             ],
@@ -780,8 +821,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: valueColor ?? Colors.white,
               fontFamily: 'Courier', // monospaced style for values
