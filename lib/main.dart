@@ -1,25 +1,13 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'services/location_service.dart';
-import 'services/odoo_service.dart';
+import 'screens/splash_screen.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize background location tracking service
-  await LocationService.initializeService();
-  
-  // Check if driver is already authenticated
-  final odoo = OdooService();
-  final isAuth = await odoo.isAuthenticated();
-
-  runApp(MyApp(isAuth: isAuth));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final bool isAuth;
-  const MyApp({super.key, required this.isAuth});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +32,7 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: isAuth ? const HomeScreen() : const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

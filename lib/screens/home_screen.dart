@@ -14,7 +14,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final _odoo = OdooService();
   final _location = LocationService();
   
@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   double? _liveLongitude;
   String? _lastSyncTime;
   bool _lastSyncSuccess = false;
-  String _statusMessage = 'Service idle. Click Start Tracking to begin.';
+  String _statusMessage = 'Initializing tracking service...';
 
   StreamSubscription? _backgroundSubscription;
   late AnimationController _pulseController;
@@ -46,10 +46,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _loadLocalInfo();
-    _fetchBikesFromOdoo();
-    _checkServiceStatus();
-    _setupBackgroundListener();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeHomeScreenState();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -59,9 +57,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _backgroundSubscription?.cancel();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _ensureTrackingStarted();
+    }
+  }
+
+  Future<void> _initializeHomeScreenState() async {
+    await _loadLocalInfo();
+    _setupBackgroundListener();
+    await _ensureTrackingStarted();
+    await _fetchBikesFromOdoo();
   }
 
   Future<void> _loadLocalInfo() async {
@@ -95,18 +108,56 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _checkServiceStatus() async {
+  Future<void> _ensureTrackingStarted({bool forceRestart = false}) async {
+    if (_selectedBike == null) {
+      setState(() {
+        _statusMessage = 'Please select a motorbike to start tracking.';
+      });
+      return;
+    }
+
     bool running = await _location.isTrackingRunning();
-    setState(() {
-      _isTrackingActive = running;
-      if (running) {
+    if (running && !forceRestart) {
+      setState(() {
+        _isTrackingActive = true;
         _pulseController.repeat(reverse: true);
-        _statusMessage = 'Tracking motorbike location...';
-      } else {
-        _pulseController.stop();
-        _statusMessage = 'Service idle. Click Start Tracking to begin.';
+        if (_statusMessage == 'Initializing tracking service...' || _statusMessage.isEmpty) {
+          _statusMessage = 'Tracking motorbike location...';
+        }
+      });
+      return;
+    }
+
+    if (running && forceRestart) {
+      await _location.stopTracking();
+    }
+
+    if (!mounted) return;
+    bool hasPermission = await _location.requestPermissions(context);
+    if (!hasPermission) {
+      if (mounted) {
+        setState(() {
+          _isTrackingActive = false;
+          _pulseController.stop();
+          _statusMessage = 'Location permissions are required for tracking.';
+        });
       }
-    });
+      return;
+    }
+
+    bool started = await _location.startTracking();
+    if (mounted) {
+      setState(() {
+        _isTrackingActive = started;
+        if (started) {
+          _pulseController.repeat(reverse: true);
+          _statusMessage = 'Tracking active, fetching coordinates...';
+        } else {
+          _pulseController.stop();
+          _statusMessage = 'Failed to start tracking service.';
+        }
+      });
+    }
   }
 
   void _setupBackgroundListener() {
@@ -164,64 +215,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final bikeDisplayName = "${bike['brand']} ${bike['model_name']} - ${bike['registration_number'] ?? bike['chassis_number']}";
     await _odoo.setActiveBike(bike);
 
-    // If tracking is active, restart service to pick up the new bike chassis
-    if (_isTrackingActive) {
-      await _location.stopTracking();
-      await _location.startTracking();
-      if (!mounted) return;
+    // Force restart tracking to register new bike selection
+    await _ensureTrackingStarted(forceRestart: true);
+    
+    if (mounted && _isTrackingActive) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Switched tracking to: $bikeDisplayName'),
           backgroundColor: const Color(0xFF0EA5E9),
         ),
       );
-    }
-  }
-
-  Future<void> _toggleTracking() async {
-    if (_selectedBike == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a motorbike first.'),
-          backgroundColor: Colors.amber,
-        ),
-      );
-      return;
-    }
-
-    if (_isTrackingActive) {
-      // Stop tracking
-      await _location.stopTracking();
-      setState(() {
-        _isTrackingActive = false;
-        _pulseController.stop();
-        _liveLatitude = null;
-        _liveLongitude = null;
-        _statusMessage = 'Location tracking stopped.';
-      });
-    } else {
-      // Start tracking - request location permissions first
-      bool hasPermission = await _location.requestPermissions(context);
-      if (!hasPermission) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permissions are required to start tracking.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-        return;
-      }
-
-      bool started = await _location.startTracking();
-      if (started) {
-        setState(() {
-          _isTrackingActive = true;
-          _pulseController.repeat(reverse: true);
-          _statusMessage = 'Tracking active, fetching coordinates...';
-        });
-      }
     }
   }
 
@@ -629,7 +632,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       child: Text(
-                        _isTrackingActive ? 'LIVE TRACKING ACTIVE' : 'TRACKING PAUSED',
+                        _isTrackingActive ? 'LIVE TRACKING ACTIVE' : 'TRACKING INACTIVE',
                         style: TextStyle(
                           color: _isTrackingActive 
                               ? const Color(0xFF34D399) // Emerald 400
@@ -694,35 +697,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
-
-              // Tracking Action Button
-              ElevatedButton(
-                onPressed: _toggleTracking,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  backgroundColor: _isTrackingActive
-                      ? const Color(0xFFEF4444) // Red 500
-                      : const Color(0xFF0EA5E9), // Sky 500
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 6,
-                  shadowColor: _isTrackingActive 
-                      ? const Color(0x4DEF4444) // 30% opacity red
-                      : const Color(0x4D0EA5E9), // 30% opacity sky
-                ),
-                child: Text(
-                  _isTrackingActive ? 'STOP LOCATION TRACKING' : 'START LOCATION TRACKING',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Network Status Logs
               Text(

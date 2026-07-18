@@ -11,8 +11,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _serverController = TextEditingController(text: 'http://10.0.2.2:8069'); // standard Android emulator fallback
-  final _dbController = TextEditingController(text: 'express_lease_db');
+  final _serverController = TextEditingController(text: 'https://expresslease.quicksol.ca');
+  final _dbController = TextEditingController(text: 'db2');
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   
@@ -88,10 +88,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Brand Logo Area
-                    const Icon(
-                      Icons.motorcycle,
-                      size: 80,
-                      color: Color(0xFF38BDF8), // Sky 400
+                    Image.asset(
+                      'assets/icon/express_lease_logo.png',
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 16),
                     const Text(
